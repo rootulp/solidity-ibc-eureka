@@ -23,7 +23,7 @@ build-sp1-programs:
 # Build and optimize the eth wasm light client using `cosmwasm/optimizer`. Requires `docker` and `gzip`
 build-cw-ics08-wasm-eth:
 	docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/optimizer:0.16.1 ./programs/cw-ics08-wasm-eth
-	cp artifacts/cw_ics08_wasm_eth.wasm e2e/interchaintestv8/wasm 
+	cp artifacts/cw_ics08_wasm_eth.wasm e2e/interchaintestv8/wasm
 	gzip e2e/interchaintestv8/wasm/cw_ics08_wasm_eth.wasm -f
 
 # Build the relayer docker image
@@ -137,8 +137,11 @@ install-relayer:
 # Generate the `genesis.json` file using $TENDERMINT_RPC_URL in the `.env` file
 # Note that the `scripts/genesis.json` file is ignored in the `.gitignore` file
 genesis-sp1-ics07: build-sp1-programs
-  @echo "Generating the genesis file..."
-  RUST_LOG=info cargo run --bin operator --release -- genesis -o scripts/genesis.json
+	@echo "Generating the genesis file..."
+	RUST_LOG=info cargo run --bin operator --release -- genesis --proof-type groth16 -o scripts/genesis.json
+	@echo "--> Setting the verifier key in scripts/genesis.json"
+	@sed -i '' 's|"updateClientVkey": "[^"]*"|"updateClientVkey": "0x001b34e32d4edc192d412adba46f71919b0991694bf70f93dc613dbedce0eb25"|' scripts/genesis.json
+	@echo "--> Set the verifier key to 0x001b34e32d4edc192d412adba46f71919b0991694bf70f93dc613dbedce0eb25."
 
 # Deploy the SP1ICS07Tendermint contract to the Eth Sepolia testnet if the `.env` file is present
 deploy-sp1-ics07: genesis-sp1-ics07
